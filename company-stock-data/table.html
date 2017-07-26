@@ -1,0 +1,282 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+    <title id='Description'>Company Portfolio</title>
+    <link rel="stylesheet" href="css/jqx.base.css" type="text/css" />
+	<link rel="stylesheet" type="text/css" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.css">
+    <script type="text/javascript" src="js/jquery-1.11.1.min.js"></script>
+    <script type="text/javascript" src="js/jqxcore.js"></script>
+    <script type="text/javascript" src="js/jqxdata.js"></script>
+    <script type="text/javascript" src="js/jqxbuttons.js"></script>
+    <script type="text/javascript" src="js/jqxscrollbar.js"></script>
+    <script type="text/javascript" src="js/jqxmenu.js"></script>
+    <script type="text/javascript" src="js/jqxgrid.js"></script>
+    <script type="text/javascript" src="js/jqxgrid.selection.js"></script>
+    <script type="text/javascript" src="js/jqxgrid.columnsresize.js"></script>
+	<script type="text/javascript" src="js/jqxlistbox.js"></script>
+    <script type="text/javascript" src="js/jqxdropdownbutton.js"></script>
+    <script type="text/javascript" src="js/jqxgrid.pager.js"></script>
+    <script type="text/javascript" src="js/jqxdropdownlist.js"></script>
+    <script type="text/javascript" src="js/demos.js"></script>
+    <script type="text/javascript" src="js/generatedata.js"></script>
+	<script src="https://code.highcharts.com/highcharts.js"></script>
+    <script type="text/javascript">
+        $(document).ready(function () {
+            // prepare the data
+			$.getJSON( "bank_data.json", function( data ) {
+				//console.log(data);
+				
+				
+				//maniplation of data as per need
+				
+				//Finding % investment
+				var total_investment = 0
+				
+				for(i=0; i< data.length;i++){
+					
+					total_investment += data[i]['current_price']
+				
+				}
+				
+				for(i=0; i< data.length;i++){
+					
+					data[i]['name'] += "-"+ data[i]["valuation"] ;
+					
+					data[i]['value'] = data[i]['current_price'] + ((data[i]['returns_percentage'] /100)*data[i]['current_price']) 
+					
+					data[i]['value'] = Math.round(data[i]['value'] * 100) / 100;
+					
+					data[i]['returns_percentage'] = Math.round(data[i]['returns_percentage'] * 100) / 100;
+					data[i]['avg_buy_price'] = Math.round(data[i]['avg_buy_price'] * 100) / 100;
+					
+					data[i]['current_price'] = String(data[i]['current_price']) + "-" +String((data[i]['current_price']/total_investment)*100)
+					 
+				
+				}
+				//console.log(data)
+				var source =
+				{
+					localdata: data,
+					datatype: "json",
+					datafields:
+					[
+						{ name: 'name', type: 'string' },
+						{ name: 'current_price', type: 'string' },
+						{ name: 'count', type: 'number' },
+						{ name: 'avg_buy_price', type: 'number' },
+						//{ name: 'avg_buy_price', type: 'number' },
+						{ name: 'daily_percentage', type: 'number' },
+						{ name: 'returns_percentage', type: 'number' },
+						{ name: 'value', type: 'number' },
+					],
+
+				};
+				var dataAdapter = new $.jqx.dataAdapter(source);
+		
+				// adding valuation to the bankname
+				function valuation (row, datafield, value)
+				{	 
+
+				   bank_name = value.split("-")[0]
+				   category = value.split("-")[1]
+				   
+				   if (category == "fair")
+						return '<div style="text-align: center; margin-top: 5px;">'+ bank_name +' &nbsp;<i class="fa fa-circle" aria-hidden="true" style="color: yellow"></i></div>'
+				   else if(category == "attractive") 				   
+						return '<div style="text-align: center; margin-top: 5px;">'+ bank_name +' &nbsp;<i class="fa fa-circle" aria-hidden="true" style="color: green"></i></div>'
+				   else
+						return '<div style="text-align: center; margin-top: 5px;">'+ bank_name +' &nbsp;<i class="fa fa-circle" aria-hidden="true" style="color: red"></i></div>'
+
+						
+				}
+				
+				// rounding off the investment and showing percentage
+				
+				function investment (row, datafield, value)
+				{	
+					curr_invest = Math.round(parseInt(value.split("-")[0]) * 100) / 100
+					per_invest = Math.round(parseInt(value.split("-")[1]) * 100) / 100
+					
+					console.log(curr_invest, per_invest)
+					
+					return '<div style="text-align: center; margin-top: 5px;">'+ curr_invest + '&nbsp;('+ per_invest  + '%)</div>'
+				}
+				
+				// applying coloured up and down arrows
+				
+				function surge_fall (row, datafield, value)
+				{
+					if (value > 0)
+						return '<div style="text-align: center; margin-top: 5px;"><i class="fa fa-caret-up" aria-hidden="true" style="color: green"></i>&nbsp;'+ value +'</div>'
+					else if (value < 0)
+						return '<div style="text-align: center; margin-top: 5px;"><i class="fa fa-caret-down" aria-hidden="true" style="color: red"></i>&nbsp;'+ value +'</div>'
+
+					else{
+						return '<div style="text-align: center; margin-top: 5px;"><i class="fa fa-caret-left" aria-hidden="true" style="color: blue"></i>&nbsp;'+ value +'</div>'
+
+					}
+				}
+				
+				
+				
+				$("#jqxgrid").jqxGrid(
+				{
+					 width: '60%',
+					 source: dataAdapter,
+					 pageable: true,
+					 autoheight: true,
+					 columnsresize: true,
+					 selectionmode: 'singlecell',
+					 columns: [
+					   { text: 'Name', columntype: 'textbox', datafield: 'name', width: '20%', align: 'center', cellsalign: 'center', cellsrenderer:valuation },
+					   { text: 'Investment (%)', datafield: 'current_price', columntype: 'textbox', width: '20%', align: 'center', cellsalign: 'center', cellsformat: 'd', cellsrenderer:investment },
+					   { text: 'Nos', columntype: 'textbox', datafield: 'count', width: '11%', align: 'center', cellsalign: 'center' },
+					   { text: 'ABP', datafield: 'avg_buy_price', width: '15%', cellsformat: 'd', align: 'center', cellsalign: 'center'},
+					   //{ text: 'LTP', datafield: 'avg_buy_price', width: '11%', cellsalign: 'right' },
+					   { text: 'Daily (%)', datafield: 'daily_percentage', width: '11%', align: 'center', cellsalign: 'center', cellsrenderer:surge_fall},
+					   { text: 'Total (%)', datafield: 'returns_percentage', width: '11%', cellsformat: 'd', align: 'center', cellsalign: 'center', cellsrenderer:surge_fall },
+					   { text: 'Value', datafield: 'value', align: 'center', cellsalign: 'center', cellsformat: 'd', width: '12%' }
+					 ]
+				});
+				
+				//binding click event in javascript
+				$('#jqxgrid').on('cellclick', function (event) {
+					
+					if((event.args.rowindex == 0) && (event.args.columnindex == 0)){
+					
+
+						$.getJSON( "stock_price.json", function( plot_data ) {
+							
+							//console.log(plot_data['stock']['graphs']['stock_price']['values']);
+							//console.log(plot_data['stock']['graphs']['x_axis']['values']);
+							
+							//Plotting Chart using highcharts
+							
+							Highcharts.chart('container', {
+								chart: {
+									type: 'spline'
+								},
+								title: {
+									text: 'Stock Price of HDFC Bank over Period of Time'
+								},
+								legend: {
+									layout: 'vertical',
+									align: 'left',
+									verticalAlign: 'top',
+									x: 150,
+									y: 100,
+									floating: true,
+									borderWidth: 1,
+									backgroundColor: (Highcharts.theme && Highcharts.theme.legendBackgroundColor) || '#FFFFFF'
+								},
+								xAxis: {
+									categories: plot_data['stock']['graphs']['x_axis']['values'],
+									
+								},
+								yAxis: {
+									title: {
+										text: 'Stock Price'
+									}
+								},
+								tooltip: {
+									headerFormat: '<span style="font-size:15px">{point.key}</span><table>',
+									pointFormat: '<tr><td style="color:{series.color};padding:0">{series.name}: </td>' +
+										'<td style="padding:0">Rs. <b>{point.y:.2f}</b></td></tr>',
+									footerFormat: '</table>',
+									shared: true,
+									useHTML: true
+								},
+								credits: {
+									enabled: false
+								},
+								plotOptions: {
+									areaspline: {
+										fillOpacity: 0.5
+									}
+								},
+								series: [ {
+									name: 'HDFC Bank',
+									data: plot_data['stock']['graphs']['stock_price']['values']
+								}]
+							});
+							
+							//Plotting data over different period of time
+							
+							$("#stock_periods").show();
+							
+							for(i= -1;i<plot_data['stock']['growth_history'].length;i++){
+								
+								if (i == -1){
+									var mainClass = document.getElementById('stock_periods')
+									var opt = document.createElement('div');
+									mainClass.appendChild(opt)
+									opt.className += " new_inline";
+									opt.innerHTML = '<div style="text-align: center; margin: 10px;">Change <br> over <br> period</div>'
+
+								}
+								else{
+									var mainClass = document.getElementById('stock_periods')
+									var opt = document.createElement('div');
+									mainClass.appendChild(opt)
+									opt.className += " inline";
+									
+									if(i==0)
+										opt.innerHTML = String('<div style="text-align: center; margin: 10px;">' + String(plot_data['stock']['growth_history'][i]['label']  + "<br> " + '<i class="fa fa-caret-up" aria-hidden="true" style="color: green"></i>&nbsp;' + plot_data['stock']['growth_history'][i]['growth']) + '%</div>') 
+
+									else if (parseInt(plot_data['stock']['growth_history'][i]['growth']) > parseInt(plot_data['stock']['growth_history'][i-1]['growth']))
+										opt.innerHTML = String('<div style="text-align: center; margin: 10px;">' + String(plot_data['stock']['growth_history'][i]['label']  + "<br> " + '<i class="fa fa-caret-up" aria-hidden="true" style="color: green"></i>&nbsp;' + plot_data['stock']['growth_history'][i]['growth']) + '%</div>') 
+									else
+										opt.innerHTML = String('<div style="text-align: center; margin: 10px;">' + String(plot_data['stock']['growth_history'][i]['label']  + "<br> " + '<i class="fa fa-caret-down" aria-hidden="true" style="color: red"></i>&nbsp;' + plot_data['stock']['growth_history'][i]['growth']) + '%</div>') 
+
+								}
+								
+							}
+									
+						});
+					
+					}
+					
+				});
+				 
+			});
+        });
+    </script>
+	<style>
+		.inline { 
+			display: inline-block; 
+			border: 1px solid #668ac1; 
+			margin:10px;
+			margin-left:20px;
+			box-shadow: inset 0 0 1px 1px rgba(255, 255, 255, 0.35), 0 3px 1px -1px rgba(0, 0, 0, 0.1);
+		}
+		
+		.new_inline { 
+			display: inline-block;
+			margin:10px;			
+			margin-left:20px;
+			box-shadow: inset 0 0 1px 1px rgba(255, 255, 255, 0.35), 0 3px 1px -1px rgba(0, 0, 0, 0.1);
+		}
+		#stock_periods{
+			display: None;
+		}
+	</style>
+</head>
+<body class='default'>
+	<h1>Companies Investment Portfolio</h1>
+    <div id='jqxWidget'>
+            <div id="jqxgrid">
+        </div>
+    </div>
+	<p style="color: #565f6d">Click HDFC Bank (in `Name` column ) in above grid to get stock price distribution!</p>
+	<br>
+	<br>
+	
+	<div id="container" style="min-width: 310px; max-width:720px; height: 400px; margin: 0"></div>
+	<div id="stock_periods"></div>
+	<br>
+	<br>
+	
+
+</body>
+</html>
